@@ -1,92 +1,116 @@
-﻿/**
-* Mediator pattern
-*/
-/*jslint nomen:true, browser:true*/
 /*global define*/
+
+/**
+  * Attached pub/sub to any object
+  */
 define(function () {
 
-    var channels = {};
+  var channels = {};
+  var sRegex = /\s/g;
+  var sep = ',';
 
-    function publish() {
+  /**
+  * @constructor
+  */
+  function Mediator() {
 
-        var args = [].slice.call(arguments),
-            message = args.shift(),
-            messages = message.split(','),
-            subscribers,
-            subscriber,
-            j, jlen, i, len;
+    /** publish a message w/ variable no of parameters */
+    this.publish = function() {
 
-        for (j = 0, jlen = messages.length; j < jlen; j++) {
-          subscribers = channels[messages[j]] || [];
+      var args = [].slice.call(arguments)
+        , message = args.shift()
+        , messages = message.split(sep)
+        , subscribers
+        , subscriber
+        , j
+        , jlen
+        , i
+        , len;
 
-          for (i = 0, len = subscribers.length; i < len; i++) {
-              subscriber = subscribers[i];
-              if (subscriber) {
-                  subscriber.method.apply(subscriber.object, args);
-              }
+      for (j = 0, jlen = messages.length; j < jlen; j++) {
+        subscribers = channels[messages[j]] || [];
+
+        for (i = 0, len = subscribers.length; i < len; i++) {
+          subscriber = subscribers[i];
+          if (subscriber) {
+            subscriber.method.apply(subscriber.object, args);
           }
         }
-    }
-
-    function subscribe(message, method) {
-
-        // recursion
-        if (message.indexOf(',') > -1) {
-            var messages = message.split(',');
-            for (var i = 0, len = messages.length; i < len; i++) {
-                this.subscribe($.trim($.trim(messages[i])), method);
-            }
-        }
-
-        if (channels[message] === undefined) {
-            channels[message] = [];
-        }
-
-        var subscribers = channels[message];
-        subscribers.push({
-            object: this,
-            method: method
-        });
-
-    }
-
-    function unsubscribe(message, method) {
-
-        var subscribers = channels[message];
-
-        for (var i = 0; i < subscribers.length; i++) {
-
-            var subscriber = subscribers[i];
-
-            if (subscriber.object === this && subscriber.method === method) {
-                subscribers.splice(i--, 1);
-            }
-        }
-    }
-
-    function unsubscribeall() {
-
-        for (var each in channels) {
-
-            var subscribers = channels[each];
-
-            for (var i = 0; i < subscribers.length; i++) {
-
-                var subscriber = subscribers[i];
-
-                if (subscriber.object === this) {
-                    subscribers.splice(i--, 1);
-                }
-            }
-        }
-    }
-
-    return {
-        install: function (obj) {
-            obj.publish = publish;
-            obj.subscribe = subscribe;
-            obj.unsubscribe = unsubscribe;
-            obj.unsubscribeall = unsubscribeall;
-        }
+      }
     };
+
+    /** subscribe a method to a message */
+    this.subscribe = function(message, method) {
+
+      var messages
+        , i
+        , len
+        , subscribers;
+
+      // recursion
+      if (message.indexOf(sep) > -1) {
+        messages = message.split(sep);
+        for (i = 0, len = messages.length; i < len; i++) {
+          this.subscribe(messages[i].replace(sRegex, ''), method);
+        }
+      }
+
+      if (channels[message] === undefined) {
+        channels[message] = [];
+      }
+
+      channels[message].push({
+        object: this,
+        method: method
+      });
+
+    };
+
+    /** remove subscription */
+    this.unsubscribe = function(message, method) {
+
+      var subscribers = channels[message]
+        , subscriber
+        , i;
+
+      for (i = 0; i < subscribers.length; i++) {
+
+        subscriber = subscribers[i];
+
+        if (subscriber.object === this && subscriber.method === method) {
+          subscribers.splice(i--, 1);
+        }
+      }
+    };
+
+    /** remove all subscriptions */
+    this.unsubscribeall = function(){
+
+      var each
+        , subscribers
+        , subscriber
+        , i;
+
+      for (each in channels) {
+
+        if(channels.hasOwnProperty(each)){
+
+          subscribers = channels[each];
+
+          for (i = 0; i < subscribers.length; i++) {
+
+            subscriber = subscribers[i];
+
+            if (subscriber.object === this) {
+              subscribers.splice(i--, 1);
+            }
+          }
+        }
+      }
+    };
+
+  }
+
+  return Mediator;
+
 });
