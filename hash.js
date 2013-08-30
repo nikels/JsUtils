@@ -1,7 +1,7 @@
 /*global _*/
 /*
 * Hash JS Library
-* Copyright (c) 2011, Crimson
+* Copyright (c) 2013
 *
 * Requires es5-shim for EcmaScript 5 support
 *
